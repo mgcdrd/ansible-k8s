@@ -1,0 +1,49 @@
+---
+
+# ============================================================
+# Phase 1 — Node preparation
+# Run this first against all nodes.
+# Sets up swap, NetworkManager, kernel modules, sysctl,
+# repos, and installs kubeadm/kubelet/kubectl.
+#
+# Usage: ansible-playbook site.yml -e k8s_run=config
+# ============================================================
+- name: k8s - Node preparation
+  hosts: k8s
+  become: true
+  vars:
+    k8s_run: config
+  roles:
+    - mgcdrd.infrasvc.k8s
+
+
+# ============================================================
+# Phase 2 — Cluster initialization
+# Run once after all nodes are prepared.
+# Initializes the cluster on k8s_init_master, then joins
+# all remaining masters and workers.
+#
+# Usage: ansible-playbook site.yml -e k8s_run=init
+# ============================================================
+- name: k8s - Cluster initialization
+  hosts: k8s
+  become: true
+  vars:
+    k8s_run: init
+  roles:
+    - mgcdrd.infrasvc.k8s
+
+
+# ============================================================
+# Phase 3 — Add nodes (optional, run as needed)
+# Joins new nodes to an already-running cluster.
+#
+# Usage: ansible-playbook site.yml -e k8s_run=addnodes
+# ============================================================
+- name: k8s - Add nodes
+  hosts: k8s
+  become: true
+  vars:
+    k8s_run: addnodes
+  roles:
+    - mgcdrd.infrasvc.k8s

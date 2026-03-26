@@ -1,0 +1,4 @@
+---
+
+# Common variables for all hosts in this deployment
+ansible_user: root
