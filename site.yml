@@ -1,16 +1,17 @@
 ---
 
 # ============================================================
-# Phase 1 — Node preparation
-# Run this first against all nodes.
-# Sets up swap, NetworkManager, kernel modules, sysctl,
-# repos, and installs kubeadm/kubelet/kubectl.
+# Phase 1 — Node preparation (runs by default)
+# Removes swap, configures kernel, installs k8s packages.
+# Must run before LVM extension so swap space is freed first.
 #
-# Usage: ansible-playbook site.yml -e k8s_run=config
+# Usage: ansible-playbook site.yml
+#        ansible-playbook site.yml --tags config
 # ============================================================
 - name: k8s - Node preparation
   hosts: k8s
   become: true
+  tags: [config]
   vars:
     k8s_run: config
   roles:
@@ -18,16 +19,54 @@
 
 
 # ============================================================
-# Phase 2 — Cluster initialization
-# Run once after all nodes are prepared.
+# Phase 1b — Extend /var filesystem (runs by default)
+# Separate play so gather_facts picks up freed swap space
+# from the previous play before the LVM preflight checks.
+#
+# Usage: ansible-playbook site.yml
+#        ansible-playbook site.yml --tags config
+# ============================================================
+- name: k8s - Extend /var filesystem
+  hosts: k8s
+  become: true
+  tags: [config]
+  vars:
+    lvm_volumes:
+      - lv:       "{{ k8s_var_lv }}"
+        size:     "{{ k8s_var_size }}"
+        resizefs: true
+        mount:    /var
+  roles:
+    - mgcdrd.infrabase.lvm2
+
+
+# ============================================================
+# Phase 1c — Keepalived on masters (runs by default)
+# Floats the k8s-api VIP across control plane nodes.
+# Runs after node prep so the network interface is stable.
+#
+# Usage: ansible-playbook site.yml
+#        ansible-playbook site.yml --tags config
+# ============================================================
+- name: k8s - Keepalived on masters
+  hosts: k8smasters
+  become: true
+  tags: [config]
+  roles:
+    - mgcdrd.infrasvc.keepalived
+
+
+# ============================================================
+# Phase 2 — Cluster initialization (must be run explicitly)
 # Initializes the cluster on k8s_init_master, then joins
 # all remaining masters and workers.
 #
-# Usage: ansible-playbook site.yml -e k8s_run=init
+# Usage: ansible-playbook site.yml --tags init
 # ============================================================
 - name: k8s - Cluster initialization
   hosts: k8s
   become: true
+  tags: [init, never]
   vars:
     k8s_run: init
   roles:
@@ -35,14 +74,15 @@
 
 
 # ============================================================
-# Phase 3 — Add nodes (optional, run as needed)
+# Phase 3 — Add nodes (must be run explicitly)
 # Joins new nodes to an already-running cluster.
 #
-# Usage: ansible-playbook site.yml -e k8s_run=addnodes
+# Usage: ansible-playbook site.yml --tags addnodes
 # ============================================================
 - name: k8s - Add nodes
   hosts: k8s
   become: true
+  tags: [addnodes, never]
   vars:
     k8s_run: addnodes
   roles:

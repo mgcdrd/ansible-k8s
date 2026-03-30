@@ -9,4 +9,4 @@ collections:
   - name: mgcdrd.infrasvc
     source: https://gitlab.example.com/ansible/collections/infrasvc.git
     type: git
-    version: v0.1.0
+    version: dev

@@ -1,0 +1,13 @@
+---
+
+keepalived_vip_for:
+  - kubernetes
+
+keepalived_vrrp_instances:
+  - name:       k8s_api
+    master_node: rpiblade2.example.com
+    backup_nodes:
+      - rpiblade3.example.com
+      - rpiblade4.example.com
+    virt_ip:
+      - 10.0.0.50
