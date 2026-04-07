@@ -10,7 +10,7 @@ k8s_pod_cidr: "10.112.0.0/12"
 
 # ---- Cluster identity ----
 # FQDN of the node that runs kubeadm init (first master)
-k8s_init_master: rpiblade2.example.com
+k8s_init_master: master1.example.com           # FQDN of the node that runs kubeadm init
 
 # DNS name for the HA control plane endpoint (keepalived VIP)
 k8s_control_plane_endpoint: k8s-api.example.com
@@ -22,6 +22,13 @@ k8s_control_plane_endpoint: k8s-api.example.com
 # ---- Cluster group ----
 # Inventory group that gets written to /etc/hosts on every node.
 k8s_cluster_group: k8s
+
+# ---- OIDC authentication ----
+# Point at your Keycloak VIP — must be resolvable from the API server nodes.
+# keycloak_hostname and keycloak_lab_realm_name come from the Keycloak deployment.
+k8s_oidc_enabled:    true
+k8s_oidc_issuer_url: "https://infra-kc.example.com/realms/lab"
+k8s_oidc_client_id:  "kubernetes"
 
 # ---- Storage ----
 # LV name for /var — override per host if the name differs.

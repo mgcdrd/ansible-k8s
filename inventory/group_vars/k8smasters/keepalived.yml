@@ -5,9 +5,9 @@ keepalived_vip_for:
 
 keepalived_vrrp_instances:
   - name:       k8s_api
-    master_node: rpiblade2.example.com
+    master_node: master1.example.com
     backup_nodes:
-      - rpiblade3.example.com
-      - rpiblade4.example.com
+      - master2.example.com
+      - master3.example.com
     virt_ip:
-      - 10.0.0.50
+      - 192.168.1.10              # VIP for the k8s API — update to your network
