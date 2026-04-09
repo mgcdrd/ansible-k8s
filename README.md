@@ -28,7 +28,7 @@ configuration and cert SANs point at it, not individual node IPs.
 - If OIDC is enabled: Keycloak running and the `lab` realm configured before
   running the `init` phase (OIDC flags are baked into kubeadm config)
 - Collections installed: `ansible-galaxy collection install -r collections/requirements.yml`
-
+- SELinux is either in Permissive state or disabled
 ---
 
 ## Inventory
@@ -65,12 +65,45 @@ All variables are in `inventory/group_vars/`:
 | `k8s_version` | `1.32` | Kubernetes minor version |
 | `k8s_calico_version` | `3.31.0` | Calico CNI version |
 | `k8s_init_master` | — | FQDN of node that runs `kubeadm init` — **required** |
-| `k8s_control_plane_endpoint` | — | DNS name for the HA API VIP — **required** |
+| `k8s_control_plane_endpoint` | — | Control plane endpoint DNS name — **required**. For HA: keepalived VIP name. For single-master: same as `k8s_init_master`. |
+| `k8s_keepalived_enabled` | `true` | Set to `false` for single-master clusters — skips Phase 1c entirely |
 | `k8s_init_token` | — | Bootstrap token — **required for init phase, inject via Vault** |
 | `k8s_svc_cidr` | `10.96.0.0/12` | Kubernetes service CIDR |
 | `k8s_pod_cidr` | `10.112.0.0/12` | Pod network CIDR |
-| `k8s_var_lv` | `lv_var` | LVM logical volume name for `/var` |
-| `k8s_var_size` | `256G` | Target size of `/var` LV after extension |
+| `lvm_volumes` | see group_vars | List of LVs to extend — passed directly to `mgcdrd.infrabase.lvm2`. See **LVM** section below. |
+
+### LVM
+
+`lvm_volumes` is defined in `inventory/group_vars/k8s/main.yml` and passed
+directly to the `mgcdrd.infrabase.lvm2` role. The default extends `/var` to
+256G. Add entries to extend additional LVs on all nodes, or override in a
+per-host or per-group vars file.
+
+```yaml
+lvm_volumes:
+  - lv:      lv_var
+    size:    256G
+    resizefs: true
+    mount:   /var
+  - lv:      lv_data
+    size:    500G
+    resizefs: true
+    mount:   /data
+```
+
+Supported keys per entry:
+
+| Key | Required | Description |
+|---|---|---|
+| `lv` | yes | Logical volume name |
+| `size` | yes | Absolute target size (`256G`) or amount to add (`+50G`) |
+| `resizefs` | no | Resize the filesystem after extending (default: `true`) |
+| `mount` | no | Mount point — required when using `threshold` |
+| `vg` | no | Volume group name — defaults to the auto-detected OS VG |
+| `threshold` | no | Only extend when filesystem usage % is ≥ this value |
+| `shrink` | no | Allow shrinking — must be explicitly `true` (default: `false`) |
+
+See the `mgcdrd.infrabase.lvm2` role README for full details.
 
 ### OIDC
 
@@ -107,6 +140,8 @@ ansible-playbook site.yml --tags addnodes
 The `init` and `addnodes` phases use the `never` tag — they will not run
 on a plain `ansible-playbook site.yml` invocation.
 
+If there is a failure during the init run, you might have to reset the kubeadm configs with `kubeadm reset -f`
+
 ---
 
 ## Phases
@@ -115,7 +150,7 @@ on a plain `ansible-playbook site.yml` invocation.
 |---|---|---|---|
 | 1 — Node prep | `config` | Swap disable, kernel, NM, packages, CRI-O, Helm, python3-kubernetes | Yes |
 | 1b — LVM | `config` | Extends `/var` LV after swap space is freed | Yes |
-| 1c — Keepalived | `config` | Floats k8s-api VIP across control plane nodes | Yes |
+| 1c — Keepalived | `config` | Floats k8s-api VIP across control plane nodes | Yes (skipped when `k8s_keepalived_enabled: false`) |
 | 2 — Init | `init` | `kubeadm init` on `k8s_init_master`, Calico CNI, all nodes join | No (`never`) |
 | 3 — Add nodes | `addnodes` | Joins new nodes to an already-initialized cluster | No (`never`) |
 

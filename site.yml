@@ -26,16 +26,10 @@
 # Usage: ansible-playbook site.yml
 #        ansible-playbook site.yml --tags config
 # ============================================================
-- name: k8s - Extend /var filesystem
+- name: k8s - Extend LVM volumes
   hosts: k8s
   become: true
   tags: [config]
-  vars:
-    lvm_volumes:
-      - lv:       "{{ k8s_var_lv }}"
-        size:     "{{ k8s_var_size }}"
-        resizefs: true
-        mount:    /var
   roles:
     - mgcdrd.infrabase.lvm2
 
@@ -43,7 +37,7 @@
 # ============================================================
 # Phase 1c — Keepalived on masters (runs by default)
 # Floats the k8s-api VIP across control plane nodes.
-# Runs after node prep so the network interface is stable.
+# Skipped when k8s_keepalived_enabled: false (single-master).
 #
 # Usage: ansible-playbook site.yml
 #        ansible-playbook site.yml --tags config
@@ -53,7 +47,8 @@
   become: true
   tags: [config]
   roles:
-    - mgcdrd.infrasvc.keepalived
+    - role: mgcdrd.infrasvc.keepalived
+      when: k8s_keepalived_enabled | bool
 
 
 # ============================================================
