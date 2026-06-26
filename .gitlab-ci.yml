@@ -1,0 +1,15 @@
+---
+include:
+  - project: 'devops/pipeline-templates/infra-services'
+    ref: main
+    file: 'include-ansible.yml'
+
+default:
+  tags:
+    - docker
+
+syntax-check:
+  extends: .ansible-job-syntax-check
+
+lint:
+  extends: .ansible-job-lint
