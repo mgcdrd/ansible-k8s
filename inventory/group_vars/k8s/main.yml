@@ -10,16 +10,19 @@ k8s_pod_cidr: "10.112.0.0/12"
 
 # ---- Cluster identity ----
 # FQDN of the node that runs kubeadm init (first master)
-k8s_init_master: master1.example.com
+k8s_init_master: kube1.example.com
 
 # DNS name for the control plane endpoint.
 # HA (multi-master): set to the keepalived VIP DNS name.
 # Single-master:     set to the same value as k8s_init_master.
-k8s_control_plane_endpoint: k8s-api.example.com
+# Real cluster is single-master (kube1 only) — kube-api.example.com
+# must be a DNS record pointing at kube1; update it there if kube1 changes,
+# rather than re-running kubeadm init (this endpoint is baked into cert SANs).
+k8s_control_plane_endpoint: kube-api.example.com
 
 # Set to false for a single-master cluster — skips keepalived install/config.
 # When false, k8s_control_plane_endpoint should equal k8s_init_master.
-k8s_keepalived_enabled: true
+k8s_keepalived_enabled: false
 
 # Bootstrap token — generate with:
 # printf '%s.%s\n' $(tr -dc a-z0-9 </dev/urandom | head -c 6) $(tr -dc a-f0-9 </dev/urandom | head -c 16)

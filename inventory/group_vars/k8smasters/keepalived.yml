@@ -1,13 +1,14 @@
 ---
 
+# Inert while k8s_keepalived_enabled: false (real cluster is single-master —
+# see group_vars/k8s/main.yml). Left populated with a real hostname and no
+# backup_nodes so it's ready to use if a second master is ever added.
 keepalived_vip_for:
   - kubernetes
 
 keepalived_vrrp_instances:
   - name:       k8s_api
-    master_node: master1.example.com
-    backup_nodes:
-      - master2.example.com
-      - master3.example.com
+    master_node: kube1.example.com
+    backup_nodes: []
     virt_ip:
       - 192.168.1.10              # VIP for the k8s API — update to your network
