@@ -1,4 +1,4 @@
 ---
 
-# Common variables for all hosts in this deployment
-ansible_user: svc-ansible-user
+# ansible_user comes from inventory-common/group_vars/all.yml — same
+# regardless of which deployment targets this host.

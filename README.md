@@ -33,7 +33,9 @@ configuration and cert SANs point at it, not individual node IPs.
 
 ## Inventory
 
-Update `inventory/hosts.yml`. Masters and workers must be children of the `k8s` group:
+Hosts/groups live in `../../inventory-common/hosts.yml`, not in this
+deployment — clone that repo as a sibling of `deployments/` (see its README).
+Masters and workers must be children of the `k8s` group:
 
 ```yaml
 all:
@@ -162,7 +164,6 @@ If there is a failure during the init run, you might have to reset the kubeadm c
 deployments/k8s/
   site.yml
   inventory/
-    hosts.yml
     group_vars/
       k8s/
         main.yml          # cluster settings, OIDC
@@ -172,6 +173,9 @@ deployments/k8s/
     requirements.yml      # mgcdrd.infrabase, mgcdrd.infrasvc
   README.md
 ```
+
+Host/group definitions (`k8s`, `k8smasters`, `k8sworkers`) live in
+`../../inventory-common/hosts.yml` instead.
 
 ---
 
