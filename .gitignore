@@ -3,10 +3,12 @@ CLAUDE.md
 __pycache__/
 .venv/
 .env
+molecule/
 *.retry
 vault_pass*
 collections/*
 !collections/requirements.yml
 
-# Environment-specific inventory — copy from *.example and populate locally
+# Environment-specific files — copy from *.example and populate locally
 inventory/group_vars/*/vault.yml
+inventory/group_vars/*/env.yml

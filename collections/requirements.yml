@@ -2,11 +2,11 @@
 
 collections:
   - name: mgcdrd.infrabase
-    source: https://gitlab.example.com/ansible/collections/infrabase.git
+    source: https://github.com/mgcdrd/infrabase.git
     type: git
-    version: v0.3.0
-
+    version: v0.4.0
+    
   - name: mgcdrd.infrasvc
-    source: https://gitlab.example.com/ansible/collections/infrasvc.git
+    source: https://github.com/mgcdrd/infrasvc.git
     type: git
-    version: v0.3.0
+    version: v0.4.0
