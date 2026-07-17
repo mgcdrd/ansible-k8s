@@ -34,16 +34,16 @@ setup: venv
 		molecule-docker
 
 devinstall: setup
-    cp collections/requirements.yml collections/requirements.yml.local
-    /usr/local/bin/yq -i '(.collections[] | select(.name == "mgcdrd.infrabase") | .source) = strenv(INFRA_BASE_URL)' collections/requirements.yml.local
-    /usr/local/bin/yq -i '(.collections[] | select(.name == "mgcdrd.infrabase") | .source) = strenv(INFRA_SVC_URL)'  collections/requirements.yml.local
-    $(ANSIBLE_GALAXY) collection install \
-		-r requirements.yml.local \
+	cp collections/requirements.yml collections/requirements.yml.local
+	/usr/local/bin/yq -i '(.collections[] | select(.name == "mgcdrd.infrabase") | .source) = strenv(INFRA_BASE_URL)' collections/requirements.yml.local
+	/usr/local/bin/yq -i '(.collections[] | select(.name == "mgcdrd.infrasvc") | .source) = strenv(INFRA_SVC_URL)' collections/requirements.yml.local
+	$(ANSIBLE_GALAXY) collection install \
+		-r collections/requirements.yml.local \
 		-p collections
 
 install: setup
-    $(ANSIBLE_GALAXY) collection install \
-		-r requirements.yml \
+	$(ANSIBLE_GALAXY) collection install \
+		-r collections/requirements.yml \
 		-p collections
 
 lint:
