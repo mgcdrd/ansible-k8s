@@ -8,7 +8,7 @@
 # Usage: ansible-playbook site.yml
 #        ansible-playbook site.yml --tags config
 # ============================================================
-- name: k8s - Node preparation
+- name: K8s - Node preparation
   hosts: k8s
   become: true
   tags: [config]
@@ -26,7 +26,7 @@
 # Usage: ansible-playbook site.yml
 #        ansible-playbook site.yml --tags config
 # ============================================================
-- name: k8s - Extend LVM volumes
+- name: K8s - Extend LVM volumes
   hosts: k8s
   become: true
   tags: [config]
@@ -42,7 +42,7 @@
 # Usage: ansible-playbook site.yml
 #        ansible-playbook site.yml --tags config
 # ============================================================
-- name: k8s - Keepalived on masters
+- name: K8s - Keepalived on masters
   hosts: k8smasters
   become: true
   tags: [config]
@@ -58,7 +58,7 @@
 #
 # Usage: ansible-playbook site.yml --tags init
 # ============================================================
-- name: k8s - Cluster initialization
+- name: K8s - Cluster initialization
   hosts: k8s
   become: true
   tags: [init, never]
@@ -74,7 +74,7 @@
 #
 # Usage: ansible-playbook site.yml --tags addnodes
 # ============================================================
-- name: k8s - Add nodes
+- name: K8s - Add nodes
   hosts: k8s
   become: true
   tags: [addnodes, never]
