@@ -1,7 +1,7 @@
 ---
 
 # k8s_version, k8s_calico_version, network CIDRs, k8s_init_master,
-# k8s_control_plane_endpoint, k8s_keepalived_enabled, k8s_init_token,
+# k8s_control_plane_endpoint, k8s_keepalived_enabled,
 # k8s_cluster_group, and the OIDC vars live per cluster in
 # inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/ — shared with
 # deployments/k8s-platform, see inventory-common/README.md ("Multiple instances").

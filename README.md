@@ -87,7 +87,7 @@ All variables are in `inventory/group_vars/`:
 | `k8s_init_master` | — | FQDN of node that runs `kubeadm init` — **required** |
 | `k8s_control_plane_endpoint` | — | Control plane endpoint DNS name — **required**. For HA: keepalived VIP name. For single-master: same as `k8s_init_master`. |
 | `k8s_keepalived_enabled` | `true` | Set to `false` for single-master clusters — skips Phase 1c entirely |
-| `k8s_init_token` | — | Bootstrap token — **required for init phase, inject via Vault** |
+| `k8s_init_token` | unset | Optional. Unset, kubeadm generates a random bootstrap token at init. Only `kubeadm init` uses it (4h ttl); `addnodes` creates its own join tokens. Set only to pin a value (inject via Vault). |
 | `k8s_svc_cidr` | `10.96.0.0/12` | Kubernetes service CIDR |
 | `k8s_pod_cidr` | `10.112.0.0/12` | Pod network CIDR |
 | `lvm_volumes` | see group_vars | List of LVs to extend — passed directly to `mgcdrd.infrabase.lvm2`. See **LVM** section below. |
@@ -134,13 +134,6 @@ See the `mgcdrd.infrabase.lvm2` role README for full details.
 | `k8s_oidc_client_id` | `kubernetes` | OIDC client ID |
 | `k8s_oidc_username_claim` | `preferred_username` | JWT claim for username |
 | `k8s_oidc_groups_claim` | `groups` | JWT claim for group membership |
-
-Generate `k8s_init_token` (inject via Vault, do not commit):
-
-```bash
-printf '%s.%s\n' "$(tr -dc a-z0-9 </dev/urandom | head -c 6)" \
-                 "$(tr -dc a-f0-9 </dev/urandom | head -c 16)"
-```
 
 ---
 

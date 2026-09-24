@@ -9,4 +9,4 @@ collections:
   - name: mgcdrd.infrasvc
     source: https://github.com/mgcdrd/infrasvc.git
     type: git
-    version: v0.16.0
+    version: v0.17.0
