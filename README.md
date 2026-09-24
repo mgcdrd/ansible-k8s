@@ -33,25 +33,43 @@ configuration and cert SANs point at it, not individual node IPs.
 
 ## Inventory
 
-Hosts/groups live in `../../inventory-common/hosts.yml`, not in this
-deployment — clone that repo as a sibling of `deployments/` (see its README).
-Masters and workers must be children of the `k8s` group:
+Hosts/groups live in `../../inventory-common/instances/k8s/<name>/hosts.yml`,
+one directory per cluster, not in this deployment — clone that repo as a
+sibling of `deployments/` (see its README, "Multiple instances"). Pick the
+cluster with `DEPLOY_INSTANCE`; `ansible.cfg` builds the inventory path from it:
+
+```
+DEPLOY_INSTANCE=lab ansible-playbook site.yml
+DEPLOY_INSTANCE=lab ansible-playbook site.yml --tags init
+```
+
+An unset or misspelled name fails the first play (`instance_guard`) instead of
+silently matching no hosts. Load one instance per run — never two.
+
+An instance's `hosts.yml` lists each node in `k8s_<name>` and in its role
+group; masters and workers stay children of `k8s`:
 
 ```yaml
 all:
   children:
     k8s:
       children:
+        k8s_example:
+          hosts:
+            k8s-cp1.example.com:
+            k8s-node1.example.com:
         k8smasters:
           hosts:
             k8s-cp1.example.com:
-            k8s-cp2.example.com:
-            k8s-cp3.example.com:
         k8sworkers:
           hosts:
             k8s-node1.example.com:
-            k8s-node2.example.com:
 ```
+
+Cluster-specific vars (`k8s_init_master`, `k8s_control_plane_endpoint`, CIDRs,
+version, OIDC) live in that instance's `group_vars/k8s_<name>/`, not in this
+repo. Requires `mgcdrd.infrabase` with the `instance_guard` role — bump the pin
+in `collections/requirements.yml` to the release that includes it.
 
 ---
 
@@ -174,8 +192,8 @@ deployments/k8s/
   README.md
 ```
 
-Host/group definitions (`k8s`, `k8smasters`, `k8sworkers`) live in
-`../../inventory-common/hosts.yml` instead.
+Host/group definitions (`k8s`, `k8smasters`, `k8sworkers`) and per-cluster vars
+live in `../../inventory-common/instances/k8s/<name>/` instead.
 
 ---
 

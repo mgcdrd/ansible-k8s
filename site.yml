@@ -1,6 +1,23 @@
 ---
 
 # ============================================================
+# Phase 0 — Instance guard
+# Fails unless exactly one k8s instance is loaded (set
+# DEPLOY_INSTANCE=<name>, see ansible.cfg). Tagged always so
+# --tags runs still get checked.
+# ============================================================
+- name: K8s - Instance guard
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: [always]
+  roles:
+    - role: mgcdrd.infrabase.instance_guard
+      vars:
+        instance_guard_group: k8s
+
+
+# ============================================================
 # Phase 1 — Node preparation (runs by default)
 # Removes swap, configures kernel, installs k8s packages.
 # Must run before LVM extension so swap space is freed first.

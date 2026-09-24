@@ -2,9 +2,9 @@
 
 # k8s_version, k8s_calico_version, network CIDRs, k8s_init_master,
 # k8s_control_plane_endpoint, k8s_keepalived_enabled, k8s_init_token,
-# k8s_cluster_group, and the OIDC vars all moved to
-# inventory-common/group_vars/k8s.yml — shared with deployments/k8s-platform,
-# see that repo's README for the tier rule.
+# k8s_cluster_group, and the OIDC vars live per cluster in
+# inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/ — shared with
+# deployments/k8s-platform, see inventory-common/README.md ("Multiple instances").
 
 # lvm_volumes is passed directly to mgcdrd.infrabase.lvm2.
 # The /var entry is required for k8s nodes. Add further entries to extend
