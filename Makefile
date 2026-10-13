@@ -39,12 +39,14 @@ devinstall: setup
 	/usr/local/bin/yq -i '(.collections[] | select(.name == "mgcdrd.infrasvc") | .source) = strenv(INFRA_SVC_URL)' collections/requirements.yml.local
 	$(ANSIBLE_GALAXY) collection install \
 		-r collections/requirements.yml.local \
-		-p collections
+		-p collections \
+		--force
 
 install: setup
 	$(ANSIBLE_GALAXY) collection install \
 		-r collections/requirements.yml \
-		-p collections
+		-p collections \
+		--force
 
 lint:
 	$(ANSIBLE_LINT)
