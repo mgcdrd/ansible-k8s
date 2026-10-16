@@ -73,67 +73,57 @@ in `collections/requirements.yml` to the release that includes it.
 
 ---
 
-## Key variables
+## Variable reference
 
-All variables are in `inventory/group_vars/`:
+Cluster-specific variables live per cluster in `../../inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/` (shared with `deployments/k8s-platform`; see that repo's README, "Multiple instances"). This repo's `inventory/group_vars/` holds only what is the same for every cluster. Role variables not listed keep the defaults in the [`k8s` role README](../../collections/infrasvc/roles/k8s/README.md).
 
-- `k8s/main.yml` — cluster-wide settings
-- `k8smasters/keepalived.yml` — keepalived VIP configuration
+### Per cluster (`inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/`)
 
-| Variable | Default | Description |
-|---|---|---|
-| `k8s_version` | `1.32` | Kubernetes minor version |
-| `k8s_calico_version` | `3.31.0` | Calico CNI version |
-| `k8s_init_master` | — | FQDN of node that runs `kubeadm init` — **required** |
-| `k8s_control_plane_endpoint` | — | Control plane endpoint DNS name — **required**. For HA: keepalived VIP name. For single-master: same as `k8s_init_master`. |
-| `k8s_keepalived_enabled` | `true` | Set to `false` for single-master clusters — skips Phase 1c entirely |
-| `k8s_init_token` | unset | Optional. Unset, kubeadm generates a random bootstrap token at init. Only `kubeadm init` uses it (4h ttl); `addnodes` creates its own join tokens. Set only to pin a value (inject via Vault). |
-| `k8s_svc_cidr` | `10.96.0.0/12` | Kubernetes service CIDR |
-| `k8s_pod_cidr` | `10.112.0.0/12` | Pod network CIDR |
-| `lvm_volumes` | see group_vars | List of LVs to extend — passed directly to `mgcdrd.infrabase.lvm2`. See **LVM** section below. |
+| Variable | Default | Required | Description |
+|---|---|---|---|
+| `k8s_init_master` | none | Yes | FQDN of the node that runs `kubeadm init` |
+| `k8s_control_plane_endpoint` | none | Yes | Control plane endpoint DNS name; the keepalived VIP name for HA, or the same as `k8s_init_master` for a single master |
+| `k8s_keepalived_enabled` | `false` (role default) | No | `false` for single-master clusters, which skips the keepalived phase entirely |
+| `k8s_version` | `1.32` | No | Kubernetes minor version |
+| `k8s_calico_version` | `3.31.0` | No | Calico CNI version |
+| `k8s_svc_cidr` | `10.96.0.0/12` | No | Kubernetes service CIDR |
+| `k8s_pod_cidr` | `10.112.0.0/12` | No | Pod network CIDR |
+| `k8s_cluster_group` | `""` | No | Inventory group written to `/etc/hosts`; auto-detected when empty |
+| `k8s_init_token` | unset | No | Pins the `kubeadm init` bootstrap token. Unset, kubeadm generates one (4h TTL, used only by `init`; `addnodes` creates its own). Set only to pin a value, injected from Vault |
+| `k8s_oidc_enabled` | `false` | No | Enable OIDC flags on the API server |
+| `k8s_oidc_issuer_url` | `""` | If `k8s_oidc_enabled` | OIDC issuer URL (Keycloak realm URL) |
+| `k8s_oidc_client_id` | `kubernetes` | No | OIDC client ID |
+| `k8s_oidc_username_claim` | `preferred_username` | No | JWT claim for the username |
+| `k8s_oidc_groups_claim` | `groups` | No | JWT claim for group membership |
+
+### Set in this repo (`inventory/group_vars/`)
+
+| Variable | Shipped value | Required | Description |
+|---|---|---|---|
+| `storage_mounts` | extends `/var` (`lv_var`) to `256G` (`k8s/main.yml`) | Yes | LVs extended on all nodes, passed to `mgcdrd.infrabase.storage`; the `/var` entry is required for k8s nodes. See **LVM** below |
+| `keepalived_vip_for` | `[kubernetes]` (`k8smasters/keepalived.yml`) | No | keepalived preset for the masters |
+| `keepalived_vrrp_instances` | `k8s_api`: master `kube1.example.com`, no backups, VIP `192.168.1.10` (`k8smasters/keepalived.yml`) | Yes | VRRP instance for the API VIP; inert while `k8s_keepalived_enabled: false`. Set your own master and VIP |
 
 ### LVM
 
-`lvm_volumes` is defined in `inventory/group_vars/k8s/main.yml` and passed
-directly to the `mgcdrd.infrabase.lvm2` role. The default extends `/var` to
-256G. Add entries to extend additional LVs on all nodes, or override in a
-per-host or per-group vars file.
+`storage_mounts` is defined in `inventory/group_vars/k8s/main.yml` and passed
+to the `mgcdrd.infrabase.storage` role. The default extends `/var` to 256G.
+Add entries to extend additional LVs on all nodes, or override in a per-host
+or per-group vars file.
 
 ```yaml
-lvm_volumes:
-  - lv:      lv_var
-    size:    256G
-    resizefs: true
-    mount:   /var
-  - lv:      lv_data
-    size:    500G
-    resizefs: true
-    mount:   /data
+storage_mounts:
+  - path: /var
+    lv: lv_var
+    size: 256G
+  - path: /data
+    lv: lv_data
+    size: 500G
 ```
 
-Supported keys per entry:
-
-| Key | Required | Description |
-|---|---|---|
-| `lv` | yes | Logical volume name |
-| `size` | yes | Absolute target size (`256G`) or amount to add (`+50G`) |
-| `resizefs` | no | Resize the filesystem after extending (default: `true`) |
-| `mount` | no | Mount point — required when using `threshold` |
-| `vg` | no | Volume group name — defaults to the auto-detected OS VG |
-| `threshold` | no | Only extend when filesystem usage % is ≥ this value |
-| `shrink` | no | Allow shrinking — must be explicitly `true` (default: `false`) |
-
-See the `mgcdrd.infrabase.lvm2` role README for full details.
-
-### OIDC
-
-| Variable | Default | Description |
-|---|---|---|
-| `k8s_oidc_enabled` | `false` | Enable OIDC flags on the API server |
-| `k8s_oidc_issuer_url` | `""` | OIDC issuer URL (Keycloak realm URL) |
-| `k8s_oidc_client_id` | `kubernetes` | OIDC client ID |
-| `k8s_oidc_username_claim` | `preferred_username` | JWT claim for username |
-| `k8s_oidc_groups_claim` | `groups` | JWT claim for group membership |
+`size` is a minimum: an LV that is already larger is left alone, and LVs are
+never shrunk. `vg` defaults to the VG of the root mount. See the
+`mgcdrd.infrabase.storage` role README for the full list of keys.
 
 ---
 

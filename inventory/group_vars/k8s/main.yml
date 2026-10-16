@@ -6,18 +6,16 @@
 # inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/ — shared with
 # deployments/k8s-platform, see inventory-common/README.md ("Multiple instances").
 
-# lvm_volumes is passed directly to mgcdrd.infrabase.lvm2.
+# storage_mounts is passed to mgcdrd.infrabase.storage.
 # The /var entry is required for k8s nodes. Add further entries to extend
 # additional LVs on all nodes, or override per host/group in their own
 # group_vars file.
 #
-# See the lvm2 role README for the full list of supported keys.
-lvm_volumes:
-  - lv:       lv_var
-    size:      256G
-    resizefs:  true
-    mount:     /var
-  # - lv:     lv_data
-  #   size:   500G
-  #   resizefs: true
-  #   mount:  /data
+# See the storage role README for the full list of supported keys.
+storage_mounts:
+  - path: /var
+    lv: lv_var
+    size: 256G
+  # - path: /data
+  #   lv: lv_data
+  #   size: 500G
