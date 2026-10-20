@@ -6,13 +6,14 @@
 # inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/ — shared with
 # deployments/k8s-platform, see inventory-common/README.md ("Multiple instances").
 
-# storage_mounts is passed to mgcdrd.infrabase.storage.
+# storage_mounts_extra_k8s is layered over the base storage_mounts (CIS mount
+# options from inventory-common) by mgcdrd.infrabase.storage.
 # The /var entry is required for k8s nodes. Add further entries to extend
 # additional LVs on all nodes, or override per host/group in their own
 # group_vars file.
 #
 # See the storage role README for the full list of supported keys.
-storage_mounts:
+storage_mounts_extra_k8s:
   - path: /var
     lv: lv_var
     size: 256G

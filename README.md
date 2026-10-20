@@ -43,8 +43,8 @@ DEPLOY_INSTANCE=lab ansible-playbook site.yml
 DEPLOY_INSTANCE=lab ansible-playbook site.yml --tags init
 ```
 
-An unset or misspelled name fails the first play (`instance_guard`) instead of
-silently matching no hosts. Load one instance per run — never two.
+Load one instance per run — never two. This deployment no longer runs
+`instance_guard`, so an unset or misspelled name is not caught for you.
 
 An instance's `hosts.yml` lists each node in `k8s_<name>` and in its role
 group; masters and workers stay children of `k8s`:
@@ -68,8 +68,7 @@ all:
 
 Cluster-specific vars (`k8s_init_master`, `k8s_control_plane_endpoint`, CIDRs,
 version, OIDC) live in that instance's `group_vars/k8s_<name>/`, not in this
-repo. Requires `mgcdrd.infrabase` with the `instance_guard` role — bump the pin
-in `collections/requirements.yml` to the release that includes it.
+repo.
 
 ---
 
@@ -100,19 +99,20 @@ Cluster-specific variables live per cluster in `../../inventory-common/instances
 
 | Variable | Shipped value | Required | Description |
 |---|---|---|---|
-| `storage_mounts` | extends `/var` (`lv_var`) to `256G` (`k8s/main.yml`) | Yes | LVs extended on all nodes, passed to `mgcdrd.infrabase.storage`; the `/var` entry is required for k8s nodes. See **LVM** below |
+| `storage_mounts_extra_k8s` | extends `/var` (`lv_var`) to `256G` (`k8s/main.yml`) | Yes | LVs extended on all nodes, layered over the base `storage_mounts` for `mgcdrd.infrabase.storage`; the `/var` entry is required for k8s nodes. See **LVM** below |
 | `keepalived_vip_for` | `[kubernetes]` (`k8smasters/keepalived.yml`) | No | keepalived preset for the masters |
 | `keepalived_vrrp_instances` | `k8s_api`: master `kube1.example.com`, no backups, VIP `192.168.1.10` (`k8smasters/keepalived.yml`) | Yes | VRRP instance for the API VIP; inert while `k8s_keepalived_enabled: false`. Set your own master and VIP |
 
 ### LVM
 
-`storage_mounts` is defined in `inventory/group_vars/k8s/main.yml` and passed
-to the `mgcdrd.infrabase.storage` role. The default extends `/var` to 256G.
-Add entries to extend additional LVs on all nodes, or override in a per-host
+`storage_mounts_extra_k8s` is defined in `inventory/group_vars/k8s/main.yml`
+and layered over the base `storage_mounts` (the CIS mount options from
+inventory-common) by `mgcdrd.infrabase.storage`, so those are kept. The default
+extends `/var` to 256G. Add entries to extend additional LVs on all nodes, or override in a per-host
 or per-group vars file.
 
 ```yaml
-storage_mounts:
+storage_mounts_extra_k8s:
   - path: /var
     lv: lv_var
     size: 256G
