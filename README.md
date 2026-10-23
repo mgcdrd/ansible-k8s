@@ -33,31 +33,26 @@ configuration and cert SANs point at it, not individual node IPs.
 
 ## Inventory
 
-Hosts/groups live in `../../inventory-common/instances/k8s/<name>/hosts.yml`,
-one directory per cluster, not in this deployment — clone that repo as a
-sibling of `deployments/` (see its README, "Multiple instances"). Pick the
-cluster with `DEPLOY_INSTANCE`; `ansible.cfg` builds the inventory path from it:
+Hosts, groups, and all variables come from the environment inventory set in
+`ansible.cfg` (`../../inventory-common/lab/hosts.yml`); for another cluster or
+environment pass `-i <inventory>/<env>/hosts.yml`:
 
 ```
-DEPLOY_INSTANCE=lab ansible-playbook site.yml
-DEPLOY_INSTANCE=lab ansible-playbook site.yml --tags init
+ansible-playbook site.yml
+ansible-playbook site.yml --tags init
+ansible-playbook site.yml -i ../../../inventory-<client>/prd/hosts.yml
 ```
 
-Load one instance per run — never two. This deployment no longer runs
-`instance_guard`, so an unset or misspelled name is not caught for you.
+One cluster per environment inventory. Nothing else guards against running the
+wrong inventory, so check `--list-hosts` first.
 
-An instance's `hosts.yml` lists each node in `k8s_<name>` and in its role
-group; masters and workers stay children of `k8s`:
+The environment's `hosts.yml` lists masters and workers as children of `k8s`:
 
 ```yaml
 all:
   children:
     k8s:
       children:
-        k8s_example:
-          hosts:
-            k8s-cp1.example.com:
-            k8s-node1.example.com:
         k8smasters:
           hosts:
             k8s-cp1.example.com:
@@ -66,17 +61,16 @@ all:
             k8s-node1.example.com:
 ```
 
-Cluster-specific vars (`k8s_init_master`, `k8s_control_plane_endpoint`, CIDRs,
-version, OIDC) live in that instance's `group_vars/k8s_<name>/`, not in this
-repo.
+Cluster vars (`k8s_init_master`, `k8s_control_plane_endpoint`, CIDRs, version,
+OIDC) live in the inventory's `group_vars/k8s/`, not in this repo.
 
 ---
 
 ## Variable reference
 
-Cluster-specific variables live per cluster in `../../inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/` (shared with `deployments/k8s-platform`; see that repo's README, "Multiple instances"). This repo's `inventory/group_vars/` holds only what is the same for every cluster. Role variables not listed keep the defaults in the [`k8s` role README](../../collections/infrasvc/roles/k8s/README.md).
+All variables live in the environment inventory (`inventory-common/lab` for the lab), shared with `deployments/k8s-platform`. Role variables not listed keep the defaults in the [`k8s` role README](../../collections/infrasvc/roles/k8s/README.md).
 
-### Per cluster (`inventory-common/instances/k8s/<name>/group_vars/k8s_<name>/`)
+### Cluster (`group_vars/k8s/k8s.yml`)
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
@@ -95,19 +89,19 @@ Cluster-specific variables live per cluster in `../../inventory-common/instances
 | `k8s_oidc_username_claim` | `preferred_username` | No | JWT claim for the username |
 | `k8s_oidc_groups_claim` | `groups` | No | JWT claim for group membership |
 
-### Set in this repo (`inventory/group_vars/`)
+### Storage and keepalived (`group_vars/k8s/k8s.yml`, `group_vars/k8smasters/keepalived.yml`)
 
 | Variable | Shipped value | Required | Description |
 |---|---|---|---|
-| `storage_mounts_extra_k8s` | extends `/var` (`lv_var`) to `256G` (`k8s/main.yml`) | Yes | LVs extended on all nodes, layered over the base `storage_mounts` for `mgcdrd.infrabase.storage`; the `/var` entry is required for k8s nodes. See **LVM** below |
+| `storage_mounts_extra_k8s` | extends `/var` (`lv_var`) to `256G` (`k8s.yml`) | Yes | LVs extended on all nodes, layered over the base `storage_mounts` for `mgcdrd.infrabase.storage`; the `/var` entry is required for k8s nodes. See **LVM** below |
 | `keepalived_vip_for` | `[kubernetes]` (`k8smasters/keepalived.yml`) | No | keepalived preset for the masters |
 | `keepalived_vrrp_instances` | `k8s_api`: master `kube1.example.com`, no backups, VIP `192.168.1.10` (`k8smasters/keepalived.yml`) | Yes | VRRP instance for the API VIP; inert while `k8s_keepalived_enabled: false`. Set your own master and VIP |
 
 ### LVM
 
-`storage_mounts_extra_k8s` is defined in `inventory/group_vars/k8s/main.yml`
+`storage_mounts_extra_k8s` is defined in `group_vars/k8s/k8s.yml`
 and layered over the base `storage_mounts` (the CIS mount options from
-inventory-common) by `mgcdrd.infrabase.storage`, so those are kept. The default
+`group_vars/all/harden.yml`) by `mgcdrd.infrabase.storage`, so those are kept. The default
 extends `/var` to 256G. Add entries to extend additional LVs on all nodes, or override in a per-host
 or per-group vars file.
 
@@ -164,19 +158,14 @@ If there is a failure during the init run, you might have to reset the kubeadm c
 ```
 deployments/k8s/
   site.yml
-  inventory/
-    group_vars/
-      k8s/
-        main.yml          # cluster settings, OIDC
-      k8smasters/
-        keepalived.yml    # VIP, interface, priorities
+  ansible.cfg             # inventory = ../../inventory-common/lab/hosts.yml
   collections/
     requirements.yml      # mgcdrd.infrabase, mgcdrd.infrasvc
   README.md
 ```
 
-Host/group definitions (`k8s`, `k8smasters`, `k8sworkers`) and per-cluster vars
-live in `../../inventory-common/instances/k8s/<name>/` instead.
+Hosts, groups, and vars (`k8s`, `k8smasters`, `k8sworkers`) live in the
+environment inventory.
 
 ---
 
